@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>JS-free show more buttons</title>
+<style>
+/* In production, CSS should be in its own file */
+/* This is a demo, and demos that stay contained in one HTML file are nice */
+/* you can email them or download them or what have you and it's just one file to worry about */
+body {
+	font-family: sans-serif;
+}
+
+.box-container {
+	display: flex;
+	gap: 12px;
+}
+
+.box {
+	border: 1px solid #d5d5d5;
+	border-radius: 12px;
+	padding: 24px;
+
+	> h2 {
+		font-weight: normal;
+		margin: 0;
+		margin-bottom: 24px;
+	}
+	> .ingredients {
+		list-style: none;
+		padding: 0;
+		margin-bottom: 24px;
+		> li {
+			margin-bottom: 12px;
+		}
+	}
+	> .show-hide-button {
+		display: block;
+		text-align: center;
+	}
+
+	/* The pre-:has way */
+	> .show-hide-checkbox {
+		display: none;
+	}
+	> .show-hide-checkbox:not(:checked) ~ .ingredients > :nth-child(n + 11) {
+		display: none;
+	}
+	> .show-hide-checkbox:checked ~ .show-hide-button > .text-show {
+		display: none;
+	}
+	> .show-hide-checkbox:not(:checked) ~ .show-hide-button > .text-hide {
+		display: none;
+	}
+
+	/* The :has way, which is keyboard-operable but doesn't work in Firefox yet */
+	&:has(.show-hide-checkbox:not(:checked)) > .ingredients > :nth-child(n + 11) {
+		display: none;
+	}
+	&:has(.show-hide-checkbox:checked) > .show-hide-button > .text-show {
+		display: none;
+	}
+	&:has(.show-hide-checkbox:not(:checked)) > .show-hide-button > .text-hide {
+		display: none;
+	}
+	> .show-hide-button > .show-hide-checkbox {
+		/* Invisible but keyboard accessible */
+		position: absolute;
+		opacity: 0;
+		pointer-events: none;
+	}
+	> .show-hide-button:has(input:focus-visible) {
+		outline: auto;
+	}
+
+	/* Truncated text block */
+	> .show-hide-checkbox:not(:checked) ~ .truncate-paragraph,
+	&:is(:has(.show-hide-checkbox:not(:checked))) > .truncate-paragraph { /* :is() for forgiving parsing in browsers that don't support :has() */
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 10;
+		overflow: hidden;
+	}
+}
+
+.resizable {
+	resize: inline;
+	overflow: hidden;
+}
+</style>
+</head>
+<body>
+<p>The case without a show more/less button is easy enough:</p>
+<div class="box-container">
+	<div class="box">
+		<h2>Instant ramen</h2>
+		<ul class="ingredients">
+			<li><label><input type="checkbox" /> 1 package instant ramen</label></li>
+			<li><label><input type="checkbox" /> 1 cup water</label></li>
+		</ul>
+	</div>
+</div>
+<p>When there are fewer than ten items, we hide the show more button by not generating it server-side. If you wanted to do it from CSS, you could get rid of &lt;ul&gt;/&lt;li&gt;, have the &lt;label&gt;s sit directly inside the .box, and say something like <code>.show-hide-button:not(label:nth-of-type(11) ~ .show-hide-button) {display: none;}</code>, but that seems overly complicated and too clever for its own good.</p>
+<p>First idea for the show more button:</p>
+<pre><code>First ten items
+&lt;details&gt;
+	Rest of items, above the show more/less button
+	&lt;summary&gt;Show more/less&lt;/summary&gt;
+&lt;/details&gt;</code></pre>
+<p>Advantages: It's accessible by default; screen readers can tell what's going on. Ctrl-F can see inside the hidden area (today in Chrome and hopefully someday everywhere). Markup is straightforward.</p>
+<p>Disadvantages: <i>It doesn't work.</i> Putting &lt;summary&gt; at the end isn't supported. When you write that markup, &lt;summary&gt; gets moved to the top like this:</p>
+First ten items
+<details>
+	Rest of items, above the show more/less button
+	<summary>Show more/less</summary>
+</details>
+<p>Not what we were hoping for.</p>
+<p>Next idea: Add a hidden checkbox on the page. Toggling a checkbox when a &lt;label&gt; is clicked is built into HTML. CSS has :checked. No JS needed. I'd recommend something like this;</p>
+<div class="box-container">
+	<div class="box">
+		<h2>Black forest rhubarb cake, from Portal</h2>
+		<input type="checkbox" class="show-hide-checkbox" id="show-1" />
+		<ul class="ingredients">
+			<li><label><input type="checkbox" /> 1 (18.25-ounce) package chocolate cake mix</label></li>
+			<li><label><input type="checkbox" /> 1 can prepared coconut–pecan frosting</label></li>
+			<li><label><input type="checkbox" /> ¾ cup vegetable oil</label></li>
+			<li><label><input type="checkbox" /> 4 large eggs</label></li>
+			<li><label><input type="checkbox" /> 1 cup semi-sweet chocolate chips</label></li>
+			<li><label><input type="checkbox" /> ¾ cup butter or margarine</label></li>
+			<li><label><input type="checkbox" /> 1 ⅔ cup granulated sugar</label></li>
+			<li><label><input type="checkbox" /> 2 cups all-purpose flour</label></li>
+			<li><label><input type="checkbox" /> 2 cups rhubarb, sliced</label></li>
+			<li><label><input type="checkbox" /> ⅔ cups granulated rhubarb</label></li>
+			<li><label><input type="checkbox" /> 1 tbsp. all-purpose rhubarb</label></li>
+			<li><label><input type="checkbox" /> 1 tsp. grated orange rhubarb</label></li>
+			<li><label><input type="checkbox" /> 3 tbsp. rhubarb, on fire</label></li>
+			<li><label><input type="checkbox" /> 1 large rhubarb</label></li>
+			<li><label><input type="checkbox" /> 1 cross borehole electromagnetic imaging rhubarb</label></li>
+			<li><label><input type="checkbox" /> 2 tbsp. rhubarb juice</label></li>
+		</ul>
+		<label class="show-hide-button" for="show-1">
+			<span class="text-show">Show more</span>
+			<span class="text-hide">Show less</span>
+		</label>
+	</div>
+</div>
+<p>Problem: when you're tabbing through the page on your keyboard, focus skips over the show more/less button. Focus lands on &lt;input&gt;, not on &lt;label&gt;, and &lt;input&gt; is <code>display: none</code> and therefore hidden both visually and from keyboard navigation. We had to move &lt;input&gt; before the ingredient list in the DOM so that we could write a CSS selector that can see the &lt;input&gt;'s state while targeting the &lt;li&gt;s. If we added the &lt;input&gt; back to the page's tab order, it would come before the checkboxes in the ingredient list, even though visually it comes after the checkboxes in the ingredient list.</p>
+<p>If we move the &lt;input&gt; to live with its &lt;label&gt; in the DOM and add it back to the tab order, keyboard navigation works. Unfortunately we need to use :has(), <a href="https://caniuse.com/css-has">which isn't supported in Firefox yet but will be soon</a>, to make the &lt;input&gt; control styles on elements that come before it in the DOM. Once :has() is widely supported, this is the solution I'd recommend:</p>
+<div class="box-container">
+	<div class="box">
+		<h2>Black forest rhubarb cake, from Portal</h2>
+		<ul class="ingredients">
+			<li><label><input type="checkbox" /> 1 (18.25-ounce) package chocolate cake mix</label></li>
+			<li><label><input type="checkbox" /> 1 can prepared coconut–pecan frosting</label></li>
+			<li><label><input type="checkbox" /> ¾ cup vegetable oil</label></li>
+			<li><label><input type="checkbox" /> 4 large eggs</label></li>
+			<li><label><input type="checkbox" /> 1 cup semi-sweet chocolate chips</label></li>
+			<li><label><input type="checkbox" /> ¾ cup butter or margarine</label></li>
+			<li><label><input type="checkbox" /> 1 ⅔ cup granulated sugar</label></li>
+			<li><label><input type="checkbox" /> 2 cups all-purpose flour</label></li>
+			<li><label><input type="checkbox" /> 2 cups rhubarb, sliced</label></li>
+			<li><label><input type="checkbox" /> ⅔ cups granulated rhubarb</label></li>
+			<li><label><input type="checkbox" /> 1 tbsp. all-purpose rhubarb</label></li>
+			<li><label><input type="checkbox" /> 1 tsp. grated orange rhubarb</label></li>
+			<li><label><input type="checkbox" /> 3 tbsp. rhubarb, on fire</label></li>
+			<li><label><input type="checkbox" /> 1 large rhubarb</label></li>
+			<li><label><input type="checkbox" /> 1 cross borehole electromagnetic imaging rhubarb</label></li>
+			<li><label><input type="checkbox" /> 2 tbsp. rhubarb juice</label></li>
+		</ul>
+		<label class="show-hide-button">
+			<input type="checkbox" class="show-hide-checkbox" />
+			<span class="text-show">Show more</span>
+			<span class="text-hide">Show less</span>
+		</label>
+	</div>
+</div>
+<p>Text:</p>
+<div class="box-container">
+	<div class="box">
+		<h2>Just a bunch of text, :has()-powered</h2>
+		<p class="truncate-paragraph">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+		<label class="show-hide-button">
+			<input type="checkbox" class="show-hide-checkbox" />
+			<span class="text-show">Show more</span>
+			<span class="text-hide">Show less</span>
+		</label>
+	</div>
+	<div class="box">
+		<h2>Just a bunch of text, :has()-free</h2>
+		<input type="checkbox" class="show-hide-checkbox" id="show-2" />
+		<p class="truncate-paragraph">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+		<label class="show-hide-button" for="show-2">
+			<span class="text-show">Show more</span>
+			<span class="text-hide">Show less</span>
+		</label>
+	</div>
+</div>
+<div class="box resizable">
+	<h2>Remaining problem</h2>
+	<p class="truncate-paragraph">By some coincidence I was working on truncating blocks of text at $DAYJOB a few weeks ago. It's easy to truncate text to a given number of lines using just CSS. The amount of text that fits on a line varies with line length, and line length varies with screen size (or in this demo with the provided resize handle). The pure CSS solution automatically handles things when the container is resized (more than can be said for most JS-powered solutions). So far so good. If the text is short enough and the lines are long enough that everything fits on ten lines, the show more/less button does nothing. It would make sense to make the button disappear when it does nothing and reappear when it's needed, but I haven't found a way to do it without JS. Sure, you could have the server omit the show/hide button if the text is below a certain length, but that won't match perfectly with "ten lines", given that the amount of text that fits on ten lines varies as the user resizes the browser window (or, in this demo, the resizable container.).</p>
+	<label class="show-hide-button">
+		<input type="checkbox" class="show-hide-checkbox" />
+		<span class="text-show">Show more</span>
+		<span class="text-hide">Show less</span>
+	</label>
+</div>
+</body>
+</html>
